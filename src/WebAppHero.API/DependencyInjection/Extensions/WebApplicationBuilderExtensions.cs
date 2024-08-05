@@ -6,13 +6,10 @@ public static class WebApplicationBuilderExtensions
 {
     public static void ConfigureApplicationLogger(this WebApplicationBuilder builder)
     {
-        Log.Logger = new LoggerConfiguration()
-            .ReadFrom
-            .Configuration(builder.Configuration)
-            .CreateLogger();
+        builder.Logging.ClearProviders();
 
-        builder.Logging.ClearProviders().AddSerilog();
-
-        builder.Host.UseSerilog();
+        builder.Host.UseSerilog((context, loggerConfig) => {
+            loggerConfig.ReadFrom.Configuration(context.Configuration);
+        });
     }
 }

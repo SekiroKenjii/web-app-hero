@@ -12,12 +12,11 @@ builder.Services.AddApplicationLayer();
 builder.Services.AddPersistenceLayer();
 
 var app = builder.Build();
+var env = app.Environment;
 
 // Configure the HTTP request pipeline.
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.MapApiEndpoints();
-app.ConfigureSwagger(app.Environment);
-//app.UseHttpsRedirection();
-//app.UseAuthorization();
+app.ConfigureSwagger(env);
 
 await app.RunApplicationAsync();
