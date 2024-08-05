@@ -53,7 +53,7 @@ public class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
     private static OpenApiInfo CreateOpenApiInfo(ApiVersionDescription description)
     {
         var info = new OpenApiInfo {
-            Title = "TGProV4.CleanArchitecture",
+            Title = "WebAppHero.CleanArchitecture.Template",
             Version = description.ApiVersion.ToString(),
             //License = new OpenApiLicense {
             //    Name = "MIT License",

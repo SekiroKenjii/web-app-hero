@@ -1,0 +1,50 @@
+services:
+  application:
+    image: ${DOCKER_REGISTRY-}web-app-hero
+    build:
+      context: .
+      dockerfile: src/WebAppHero.API/Dockerfile
+    environment:
+      - "Serilog__Usings=Serilog.Sinks.Console, Serilog.Sinks.File"
+      - "Serilog__MinimumLevel__Default=Information"
+      - "Serilog__MinimumLevel__Override__Microsoft=Information"
+      - "Serilog__MinimumLevel__Override__System=Information"
+      - "Serilog__WriteTo__0__Name=Console"
+      - "Serilog__WriteTo__0__Args__Theme=Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme::Code, Serilog.Sinks.Console"
+      - "Serilog__WriteTo__1__Name=File"
+      - "Serilog__WriteTo__1__Args__path=logs/log-.txt"
+      - "Serilog__WriteTo__1__Args__rollingInterval=Day"
+      - "Serilog__WriteTo__1__Args__shared=true"
+      - "Serilog__Enrich=FromLogContext, WithMachineName, WithThreadId"
+      - "SqlServerRetryOptions__MaxRetryCount=5"
+      - "SqlServerRetryOptions__MaxRetryDelay=00:00:05"
+      - "SqlServerRetryOptions__ErrorNumbersToAdd="
+      - "PasswordValidatorOptions__RequiredMinLength=8"
+      - "PasswordValidatorOptions__RequiredNonAlphanumericLength=1"
+      - "PasswordValidatorOptions__RequiredLowercaseLength=1"
+      - "PasswordValidatorOptions__RequiredUppercaseLength=1"
+      - "PasswordValidatorOptions__RequiredDigitLength=1"
+      - "AllowedHosts=*"
+      - "ConnectionStrings__SqlServerConnectionString=Server=db;Database=WebAppHeroDB;User=sa;Password=P@ssw0rd1;MultipleActiveResultSets=True;TrustServerCertificate=True"
+      - "ASPNETCORE_Kestrel__Certificates__Default__Password=P@ssw0rd1"
+      - "ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx"
+      - "ASPNETCORE_HTTP_PORTS=8080"
+      - "ASPNETCORE_HTTPS_PORTS=8081"
+    volumes:
+      - ~/.aspnet/https:/https:ro
+    ports:
+      - "80:8080"
+      - "443:8081"
+    depends_on:
+      - db
+    restart: on-failure
+    container_name: web-app-hero-api
+
+  db:
+    image: "mcr.microsoft.com/mssql/server"
+    environment:
+      - "MSSQL_SA_PASSWORD=P@ssw0rd1"
+      - "ACCEPT_EULA=Y"
+    ports:
+      - "1433:1433"
+    container_name: web-app-hero-mssql-server

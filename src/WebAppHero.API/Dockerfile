@@ -1,29 +1,28 @@
-# TODO - IT'S NOT WORKING RIGHT NOW!
-
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-# This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 USER app
 WORKDIR /app
-EXPOSE 8080
-EXPOSE 8081
-
+EXPOSE 80
+EXPOSE 443
 
 # This stage is used to build the service project
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
-WORKDIR /src
+WORKDIR /
 COPY ["src/WebAppHero.API/WebAppHero.API.csproj", "src/WebAppHero.API/"]
-RUN dotnet restore "./src/WebAppHero.API/WebAppHero.API.csproj"
+COPY ["src/WebAppHero.Application/WebAppHero.Application.csproj", "src/WebAppHero.Application/"]
+COPY ["src/WebAppHero.Contract/WebAppHero.Contract.csproj", "src/WebAppHero.Contract/"]
+COPY ["src/WebAppHero.Domain/WebAppHero.Domain.csproj", "src/WebAppHero.Domain/"]
+COPY ["src/WebAppHero.Infrastructure/WebAppHero.Infrastructure.csproj", "src/WebAppHero.Infrastructure/"]
+COPY ["src/WebAppHero.Persistence/WebAppHero.Persistence.csproj", "src/WebAppHero.Persistence/"]
+RUN dotnet restore "src/WebAppHero.API/WebAppHero.API.csproj"
 COPY . .
-WORKDIR "/src/src/WebAppHero.API"
-RUN dotnet build "./WebAppHero.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/WebAppHero.API"
+RUN dotnet build "WebAppHero.API.csproj" -c "$BUILD_CONFIGURATION" -o /app/build
 
 # This stage is used to publish the service project to be copied to the final stage
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./WebAppHero.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "WebAppHero.API.csproj" -c "$BUILD_CONFIGURATION" -o /app/publish /p:UseAppHost=false
 
 # This stage is used in production or when running from VS in regular mode (Default when not using the Debug configuration)
 FROM base AS final
