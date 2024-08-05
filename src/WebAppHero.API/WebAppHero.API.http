@@ -1,0 +1,6 @@
+@WebAppHero.API_HostAddress = http://localhost:5000/api/v1
+
+GET {{WebAppHero.API_HostAddress}}/products/
+Accept: application/json
+
+###

@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Folder Include="Abstractions\" />
+    <Folder Include="DependencyInjection\Options\" />
+    <Folder Include="UseCases\V1\Commands\" />
+    <Folder Include="UseCases\V1\Queries\" />
+    <Folder Include="Validators\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="FluentValidation" Version="11.9.2" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.2" />
+    <PackageReference Include="MediatR" Version="12.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WebAppHero.Contract\WebAppHero.Contract.csproj" />
+    <ProjectReference Include="..\WebAppHero.Domain\WebAppHero.Domain.csproj" />
+    <ProjectReference Include="..\WebAppHero.Persistence\WebAppHero.Persistence.csproj" />
+  </ItemGroup>
+
+</Project>
