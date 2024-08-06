@@ -28,7 +28,7 @@ services:
       - "PasswordValidatorOptions__RequiredDigitLength=1"
       - "AllowedHosts=*"
       - "ConnectionStrings__SqlServerConnectionString=Server=db;Database=WebAppHeroDB;User=sa;Password=P@ssw0rd1;MultipleActiveResultSets=True;TrustServerCertificate=True"
-      - "ASPNETCORE_Kestrel__Certificates__Default__Password=P@ssw0rd1"
+      - "ASPNETCORE_Kestrel__Certificates__Default__Password=PASSWORD_ASPNET_PFX"
       - "ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx"
       - "ASPNETCORE_HTTP_PORTS=5000"
       - "ASPNETCORE_HTTPS_PORTS=7001"
