@@ -2,30 +2,16 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using WebAppHero.Domain.Abstractions;
 using WebAppHero.Domain.Abstractions.Repositories;
+using WebAppHero.Persistence.Abstractions;
 
 namespace WebAppHero.Persistence.Repositories;
 
 public sealed class RepositoryBaseDbContext<TContext, TEntity, TKey>(TContext? dbContext)
-    : IRepositoryBaseDbContext<TContext, TEntity, TKey>, IDisposable
+    : RepositoryAbstract<TContext, TEntity, TKey>, IRepositoryBaseDbContext<TContext, TEntity, TKey>, IDisposable
     where TContext : DbContext
     where TEntity : EntityBase<TKey>
 {
     private readonly TContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-
-    private IQueryable<TEntity> GetEntity(params Expression<Func<TEntity, object>>[] includes)
-    {
-        var entity = _dbContext.Set<TEntity>().AsNoTracking();
-
-        if (includes != null && includes.Length != 0)
-        {
-            foreach (var item in includes)
-            {
-                entity.Include(item);
-            }
-        }
-
-        return entity;
-    }
 
     public async Task AddAsync(TEntity entity)
     {
@@ -34,7 +20,7 @@ public sealed class RepositoryBaseDbContext<TContext, TEntity, TKey>(TContext? d
 
     public IQueryable<TEntity> FindAll(Expression<Func<TEntity, bool>>? predicate = null, params Expression<Func<TEntity, object>>[] includes)
     {
-        var entity = GetEntity(includes);
+        var entity = GetEntity(_dbContext, includes);
 
         if (predicate != null)
         {
@@ -44,20 +30,16 @@ public sealed class RepositoryBaseDbContext<TContext, TEntity, TKey>(TContext? d
         return entity;
     }
 
-    public async Task<TEntity?> FindByIdAsync(TKey id, CancellationToken cancellationToken = default, params Expression<Func<TEntity, object>>[] includes)
+    public async Task<TEntity?> FindByIdAsync(TKey id, params Expression<Func<TEntity, object>>[] includes)
     {
-        var entity = GetEntity(includes);
+        Expression<Func<TEntity, bool>> predicate = x => !Equals(x.Id, null) && x.Id.Equals(id);
 
-        return await entity.FirstOrDefaultAsync(x => !object.Equals(x.Id, null) && x.Id.Equals(id), cancellationToken);
+        return await FirstOrDefaultAsync(_dbContext, predicate, includes);
     }
 
-    public async Task<TEntity?> FindSingleAsync(Expression<Func<TEntity, bool>>? predicate = null, CancellationToken cancellationToken = default, params Expression<Func<TEntity, object>>[] includes)
+    public async Task<TEntity?> FindSingleAsync(Expression<Func<TEntity, bool>>? predicate = null, params Expression<Func<TEntity, object>>[] includes)
     {
-        var entity = GetEntity(includes);
-
-        return predicate != null
-            ? await entity.SingleOrDefaultAsync(predicate, cancellationToken)
-            : await entity.SingleOrDefaultAsync(cancellationToken);
+        return await SingleOrDefaultAsync(_dbContext, predicate, includes);
     }
 
     public void Remove(TEntity entity)
