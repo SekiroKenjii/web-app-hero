@@ -6,17 +6,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.ConfigureApplicationLogger();
 
 // Add services to the container.
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddApiConfigurations();
 builder.Services.AddSwagger();
 builder.Services.AddApplicationLayer();
-builder.Services.AddPersistenceLayer();
+builder.Services.AddPersistenceLayer(builder.Environment);
 
 var app = builder.Build();
-var env = app.Environment;
 
 // Configure the HTTP request pipeline.
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.MapApiEndpoints();
-app.ConfigureSwagger(env);
+app.ConfigureSwagger(app.Environment);
 
 await app.RunApplicationAsync();

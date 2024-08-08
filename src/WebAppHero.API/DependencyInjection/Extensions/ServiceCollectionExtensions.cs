@@ -1,5 +1,6 @@
 using Asp.Versioning;
 using MicroElements.Swashbuckle.FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using WebAppHero.API.DependencyInjection.Options;
@@ -38,16 +39,29 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
     }
 
+    public static void AddJwtAuthentication(this IServiceCollection services)
+    {
+        services
+            .AddAuthentication(options => {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options => { });
+    }
+
     public static void AddApplicationLayer(this IServiceCollection services)
     {
         services.AddMediatRConfigurations();
+        services.AddApplicationBehaviors();
+        services.AddRequestValidators();
         services.AddAutoMapperProfiles();
     }
 
-    public static void AddPersistenceLayer(this IServiceCollection services)
+    public static void AddPersistenceLayer(this IServiceCollection services, IWebHostEnvironment environment)
     {
-        services.AddInterceptors();
-        services.AddSqlServer();
+        services.AddApplicationInterceptors();
+        services.AddSqlServer(environment);
         services.AddRepositories();
     }
 }

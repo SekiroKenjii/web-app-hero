@@ -23,13 +23,15 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             ? Expression.Equal(property, expressionConstantValue)
             : Expression.NotEqual(property, expressionConstantValue);
 
-        return Expression.Lambda(eqExpression, parameter);
+        var t = Expression.Lambda(eqExpression, parameter);
+
+        return t;
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         var softDeleteEntities = typeof(ISoftDelete).Assembly.GetTypes()
-            .Where(x => typeof(ISoftDelete).IsAssignableFrom(x) && x.IsClass);
+            .Where(x => typeof(ISoftDelete).IsAssignableFrom(x) && x.IsClass && !x.IsAbstract);
 
         foreach (var softDeleteEntity in softDeleteEntities)
         {
@@ -40,7 +42,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
                     propertyOrFieldName: nameof(ISoftDelete.IsDeleted)
                 ));
 
-            builder.Entity(softDeleteEntity).HasIndex(nameof(ISoftDelete.IsDeleted)).HasFilter("is_deleted = 0");
+            builder.Entity(softDeleteEntity).HasIndex(nameof(ISoftDelete.IsDeleted)).HasFilter("IsDeleted = 0");
         }
 
         builder.ApplyConfigurationsFromAssembly(AssemblyReference.Assembly);

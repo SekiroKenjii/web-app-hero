@@ -12,7 +12,7 @@ public class ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionH
         var response = new {
             title = GetExceptionTitle(exception),
             status = statusCode,
-            detail = exception.Message,
+            detail = statusCode >= 500 ? "An unhandled error has occurred." : exception.Message,
             errors = GetValidationErrors(exception),
         };
 
@@ -25,6 +25,7 @@ public class ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionH
     private static int GetStatusCode(Exception exception)
     {
         return exception switch {
+            IdentityException.TokenException or IdentityException.UnauthorizedException => StatusCodes.Status401Unauthorized,
             BadRequestException => StatusCodes.Status400BadRequest,
             NotFoundException => StatusCodes.Status404NotFound,
             FluentValidation.ValidationException => StatusCodes.Status400BadRequest,

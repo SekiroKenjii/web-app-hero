@@ -3,6 +3,5 @@ using WebAppHero.Contract.Abstractions.Shared;
 
 namespace WebAppHero.Contract.Abstractions.Messages;
 
-public interface IQuery : IRequest<Result> { }
-
-public interface IQuery<T> : IRequest<Result<T>> { }
+public interface IQuery<TResponse> : IRequest<RequestHandlerResult<Result<TResponse>>>
+{ }

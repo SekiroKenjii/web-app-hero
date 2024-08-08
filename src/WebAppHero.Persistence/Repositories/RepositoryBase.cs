@@ -6,20 +6,27 @@ using WebAppHero.Persistence.Abstractions;
 
 namespace WebAppHero.Persistence.Repositories;
 
-public sealed class RepositoryBase<TEntity, TKey>(DbContext dbContext)
-    : RepositoryAbstract<DbContext, TEntity, TKey>, IRepositoryBase<TEntity, TKey>, IDisposable
+public sealed class RepositoryBase<TEntity, TKey>(ApplicationDbContext dbContext)
+    : RepositoryAbstract<ApplicationDbContext, TEntity, TKey>, IRepositoryBase<TEntity, TKey>, IDisposable
     where TEntity : EntityBase<TKey>
 {
-    private readonly DbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    private readonly ApplicationDbContext _dbContext = dbContext
+        ?? throw new ArgumentNullException(nameof(dbContext));
 
     public async Task AddAsync(TEntity entity)
     {
-        await _dbContext.AddAsync(entity);
+        await _dbContext.Set<TEntity>().AddAsync(entity);
     }
 
-    public IQueryable<TEntity> FindAll(Expression<Func<TEntity, bool>>? predicate = null, params Expression<Func<TEntity, object>>[] includes)
+    public IQueryable<TEntity> FindAll(
+        Expression<Func<TEntity, bool>>? predicate = null,
+        params Expression<Func<TEntity, object>>[]? includes)
     {
-        var entity = GetEntity(_dbContext, includes);
+        var entity = GetEntity(
+            dbContext: _dbContext,
+            isTracking: false,
+            includes: includes
+        );
 
         if (predicate != null)
         {
@@ -29,36 +36,51 @@ public sealed class RepositoryBase<TEntity, TKey>(DbContext dbContext)
         return entity;
     }
 
-    public async Task<TEntity?> FindByIdAsync(TKey id, params Expression<Func<TEntity, object>>[] includes)
+    public async Task<TEntity?> FindByIdAsync(
+        TKey id,
+        bool useCompiledQuery = true,
+        params Expression<Func<TEntity, object>>[]? includes)
     {
-        Expression<Func<TEntity, bool>> predicate = x => !Equals(x.Id, null) && x.Id.Equals(id);
+        if (useCompiledQuery && includes?.Length == 0)
+        {
+            return await FirstOrDefaultByIdAsync(_dbContext, id);
+        }
 
-        return await FirstOrDefaultAsync(_dbContext, predicate, includes);
+        return await GetEntity(_dbContext, true, includes)
+            .FirstOrDefaultAsync(x => !Equals(x.Id, null) && x.Id.Equals(id));
     }
 
-    public async Task<TEntity?> FindSingleAsync(Expression<Func<TEntity, bool>>? predicate = null, params Expression<Func<TEntity, object>>[] includes)
+    public async Task<TEntity?> FindSingleAsync(
+        Expression<Func<TEntity, bool>> predicate,
+        bool useCompiledQuery = true,
+        params Expression<Func<TEntity, object>>[]? includes)
     {
-        return await SingleOrDefaultAsync(_dbContext, predicate, includes);
+        if (useCompiledQuery && includes?.Length == 0)
+        {
+            return await SingleOrDefaultAsync(_dbContext, predicate);
+        }
+
+        return await GetEntity(_dbContext, true, includes).SingleOrDefaultAsync(predicate);
     }
 
     public void Remove(TEntity entity)
     {
-        _dbContext.Remove(entity);
+        _dbContext.Set<TEntity>().Remove(entity);
     }
 
     public void RemoveMultiple(IEnumerable<TEntity> entities)
     {
-        _dbContext.RemoveRange(entities);
+        _dbContext.Set<TEntity>().RemoveRange(entities);
     }
 
     public void Update(TEntity entity)
     {
-        _dbContext.Update(entity);
+        _dbContext.Set<TEntity>().Update(entity);
     }
 
     public void UpdateMultiple(IEnumerable<TEntity> entities)
     {
-        _dbContext.UpdateRange(entities);
+        _dbContext.Set<TEntity>().UpdateRange(entities);
     }
 
     public void Dispose()

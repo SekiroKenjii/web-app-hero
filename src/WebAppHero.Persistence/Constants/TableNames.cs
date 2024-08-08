@@ -2,6 +2,8 @@ namespace WebAppHero.Persistence.Constants;
 
 public static class TableNames
 {
+    public const string OutboxMessages = nameof(OutboxMessages);
+
     public const string Functions = nameof(Functions);
 
     public const string AppUsers = nameof(AppUsers);

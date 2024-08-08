@@ -1,49 +1,79 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using WebAppHero.Domain.Abstractions;
 using WebAppHero.Domain.Abstractions.Repositories;
 using WebAppHero.Domain.Entities.Identity;
 using WebAppHero.Persistence.DependencyInjection.Options;
+using WebAppHero.Persistence.Interceptors;
 using WebAppHero.Persistence.Repositories;
 
 namespace WebAppHero.Persistence.DependencyInjection.Extensions;
 
 public static class ServiceCollectionExtensions
 {
-    public static void AddInterceptors(this IServiceCollection services)
+    public static void AddApplicationInterceptors(this IServiceCollection services)
     {
-        services.AddHttpContextAccessor();
-        // services.AddInterceptors<UpdateAuditableEntitiesInterceptor>();
+        services.AddSingleton<ConvertDomainEventsToOutboxMessagesInterceptor>();
+        services.AddSingleton<UpdateAuditableEntitiesInterceptor>();
     }
 
-    public static void AddSqlServer(this IServiceCollection services)
+    public static void AddSqlServer(this IServiceCollection services, IWebHostEnvironment environment)
     {
         services.AddDbContextPool<DbContext, ApplicationDbContext>((provider, builder) => {
-            // var auditableInterceptor = provider.GetService<UpdateAuditableEntitiesInterceptor>();
+            var outboxInterceptor = provider.GetRequiredService<ConvertDomainEventsToOutboxMessagesInterceptor>();
+            var auditableInterceptor = provider.GetRequiredService<UpdateAuditableEntitiesInterceptor>();
             var configuration = provider.GetRequiredService<IConfiguration>();
             var options = provider.GetRequiredService<IOptionsMonitor<SqlServerRetryOptions>>().CurrentValue;
 
             #region ========== SQL-SERVER-STRATEGY-1 ==========
 
-            builder
-                .EnableDetailedErrors()
-                .EnableSensitiveDataLogging()
-                .UseLazyLoadingProxies()
-                .UseSqlServer(
-                    connectionString: configuration.GetConnectionString("SqlServerConnectionString"),
-                    sqlServerOptionsAction: optionsBuilder => {
-                        optionsBuilder
-                            .ExecutionStrategy(dependencies => new SqlServerRetryingExecutionStrategy(
-                                dependencies: dependencies,
-                                maxRetryCount: options.MaxRetryCount,
-                                maxRetryDelay: options.MaxRetryDelay,
-                                errorNumbersToAdd: options.ErrorNumbersToAdd
-                            ))
-                            .MigrationsAssembly(typeof(ApplicationDbContext).Assembly.GetName().Name);
-                    })
-                .AddInterceptors();
+            if (environment.IsDevelopment() || environment.IsStaging())
+            {
+                builder
+                    .EnableDetailedErrors()
+                    .EnableSensitiveDataLogging()
+                    .UseLazyLoadingProxies()
+                    .UseSqlServer(
+                        connectionString: configuration.GetConnectionString("SqlServerConnectionString"),
+                        sqlServerOptionsAction: optionsBuilder => {
+                            optionsBuilder
+                                .ExecutionStrategy(dependencies => new SqlServerRetryingExecutionStrategy(
+                                    dependencies: dependencies,
+                                    maxRetryCount: 1,
+                                    maxRetryDelay: TimeSpan.FromSeconds(0),
+                                    errorNumbersToAdd: options.ErrorNumbersToAdd
+                                ))
+                                .MigrationsAssembly(typeof(ApplicationDbContext).Assembly.GetName().Name);
+                        })
+                    .AddInterceptors(outboxInterceptor, auditableInterceptor);
+            }
+
+            #endregion
+
+            #region ========== SQL-SERVER-STRATEGY-2 ==========
+
+            if (environment.IsProduction())
+            {
+                builder
+                    .UseLazyLoadingProxies()
+                    .UseSqlServer(
+                        connectionString: configuration.GetConnectionString("SqlServerConnectionString"),
+                        sqlServerOptionsAction: optionsBuilder => {
+                            optionsBuilder
+                                .ExecutionStrategy(dependencies => new SqlServerRetryingExecutionStrategy(
+                                    dependencies: dependencies,
+                                    maxRetryCount: options.MaxRetryCount,
+                                    maxRetryDelay: options.MaxRetryDelay,
+                                    errorNumbersToAdd: options.ErrorNumbersToAdd
+                                ))
+                                .MigrationsAssembly(typeof(ApplicationDbContext).Assembly.GetName().Name);
+                        })
+                    .AddInterceptors(outboxInterceptor, auditableInterceptor);
+            }
 
             #endregion
         });
@@ -75,10 +105,10 @@ public static class ServiceCollectionExtensions
 
     public static void AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped(typeof(IRepositoryBase<,>), typeof(RepositoryBase<,>));
+        services.AddTransient<IUnitOfWork, UnitOfWork>();
+        services.AddTransient(typeof(IRepositoryBase<,>), typeof(RepositoryBase<,>));
 
-        services.AddScoped(typeof(IUnitOfWorkDbContext<>), typeof(UnitOfWorkDbContext<>));
-        services.AddScoped(typeof(IRepositoryBaseDbContext<,,>), typeof(RepositoryBaseDbContext<,,>));
+        services.AddTransient(typeof(IUnitOfWorkDbContext<>), typeof(UnitOfWorkDbContext<>));
+        services.AddTransient(typeof(IRepositoryBaseDbContext<,,>), typeof(RepositoryBaseDbContext<,,>));
     }
 }

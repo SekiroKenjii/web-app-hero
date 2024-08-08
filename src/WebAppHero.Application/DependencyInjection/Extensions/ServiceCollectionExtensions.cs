@@ -10,16 +10,24 @@ public static class ServiceCollectionExtensions
 {
     public static void AddMediatRConfigurations(this IServiceCollection services)
     {
+        services.AddMediatR(config => {
+            config.RegisterServicesFromAssembly(AssemblyReference.Assembly);
+        });
+    }
+
+    public static void AddApplicationBehaviors(this IServiceCollection services)
+    {
         services
-            .AddMediatR(config => {
-                config.RegisterServicesFromAssembly(AssemblyReference.Assembly);
-            })
-            .AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationDefaultPipelineBehavior<,>))
+            //.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationDefaultPipelineBehavior<,>))
             .AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationPipelineBehavior<,>))
             //.AddTransient(typeof(IPipelineBehavior<,>), typeof(TracingPipelineBehavior<,>))
             .AddTransient(typeof(IPipelineBehavior<,>), typeof(PerformancePipelineBehavior<,>))
-            //.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionPipelineBehavior<,>))
-            .AddValidatorsFromAssembly(Contract.AssemblyReference.Assembly, includeInternalTypes: true);
+            .AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionPipelineBehavior<,>));
+    }
+
+    public static void AddRequestValidators(this IServiceCollection services)
+    {
+        services.AddValidatorsFromAssembly(Contract.AssemblyReference.Assembly, includeInternalTypes: true);
     }
 
     public static void AddAutoMapperProfiles(this IServiceCollection services)

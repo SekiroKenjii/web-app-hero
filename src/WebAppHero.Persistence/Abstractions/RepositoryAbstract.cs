@@ -4,13 +4,31 @@ using WebAppHero.Domain.Abstractions;
 
 namespace WebAppHero.Persistence.Abstractions;
 
+/// <summary>
+/// Provides the most basic repository implementation for data access operations.
+/// </summary>
+/// <typeparam name="TContext">The type of the database context.</typeparam>
+/// <typeparam name="TEntity">The type of the entity.</typeparam>
+/// <typeparam name="TKey">The type of the entity key.</typeparam>
 public abstract class RepositoryAbstract<TContext, TEntity, TKey>
     where TContext : DbContext
     where TEntity : EntityBase<TKey>
 {
-    public static IQueryable<TEntity> GetEntity(TContext dbContext, params Expression<Func<TEntity, object>>[]? includes)
+    /// <summary>
+    /// Retrieves entities from the context with optional tracking changes and include expressions.
+    /// </summary>
+    /// <param name="dbContext">The database context.</param>
+    /// <param name="isTracking">Specifies whether the entities should be tracked by the context.</param>
+    /// <param name="includes">The related entities to include in the query.</param>
+    /// <returns>An <see cref="IQueryable{TEntity}"/> representing the query.</returns>
+    public static IQueryable<TEntity> GetEntity(
+        TContext dbContext,
+        bool isTracking,
+        params Expression<Func<TEntity, object>>[]? includes)
     {
-        var entity = dbContext.Set<TEntity>().AsNoTracking();
+        var entity = isTracking
+            ? dbContext.Set<TEntity>().AsTracking()
+            : dbContext.Set<TEntity>().AsNoTracking();
 
         if (includes != null && includes.Length != 0)
         {
@@ -23,15 +41,18 @@ public abstract class RepositoryAbstract<TContext, TEntity, TKey>
         return entity.AsSplitQuery();
     }
 
-    public static readonly Func<TContext, Expression<Func<TEntity, bool>>?, Expression<Func<TEntity, object>>[]?, Task<TEntity?>> SingleOrDefaultAsync =
-        EF.CompileAsyncQuery((TContext dbContext, Expression<Func<TEntity, bool>>? predicate, Expression<Func<TEntity, object>>[]? includes) =>
-            predicate != null
-                ? GetEntity(dbContext, includes).SingleOrDefault(predicate)
-                : GetEntity(dbContext, includes).SingleOrDefault());
+    /// <summary>
+    /// A compiled query that asynchronously retrieves a single entity that matches the specified predicate.
+    /// </summary>
+    public static readonly Func<TContext, Expression<Func<TEntity, bool>>, Task<TEntity?>> SingleOrDefaultAsync =
+        EF.CompileAsyncQuery((TContext dbContext, Expression<Func<TEntity, bool>> pred) =>
+            GetEntity(dbContext, true).Where(pred).SingleOrDefault());
 
-    public static readonly Func<TContext, Expression<Func<TEntity, bool>>?, Expression<Func<TEntity, object>>[]?, Task<TEntity?>> FirstOrDefaultAsync =
-        EF.CompileAsyncQuery((TContext dbContext, Expression<Func<TEntity, bool>>? predicate, Expression<Func<TEntity, object>>[]? includes) =>
-            predicate != null
-                ? GetEntity(dbContext, includes).FirstOrDefault(predicate)
-                : GetEntity(dbContext, includes).FirstOrDefault());
+
+    /// <summary>
+    /// A compiled query that asynchronously retrieves the first entity that matches the specified key.
+    /// </summary>
+    public static readonly Func<TContext, TKey, Task<TEntity?>> FirstOrDefaultByIdAsync =
+        EF.CompileAsyncQuery((TContext dbContext, TKey id) =>
+            GetEntity(dbContext, true).Where(x => !Equals(x.Id, null) && x.Id.Equals(id)).FirstOrDefault());
 }

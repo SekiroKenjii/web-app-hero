@@ -17,4 +17,6 @@ public abstract class AggregateRoot<TKey> : EntityBase<TKey>
     {
         _domainEvents.Add(domainEvent);
     }
+
+    public Guid NewEventId() => Guid.NewGuid();
 }
