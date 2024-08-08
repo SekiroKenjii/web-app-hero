@@ -1,4 +1,5 @@
 using Asp.Versioning.ApiExplorer;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
@@ -15,31 +16,29 @@ public class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
         {
             options.SwaggerDoc(description.GroupName, CreateOpenApiInfo(description));
 
-            //options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme {
-            //    Description = @"<p>JWT Authorization header using the Bearer scheme.</br>
-            //                    Enter 'Bearer' [space] and then your token in the text input below.</br>
-            //                    Example: 'Bearer json-web-token'</p>",
-            //    Name = "Authorization",
-            //    In = ParameterLocation.Header,
-            //    Type = SecuritySchemeType.ApiKey,
-            //    Scheme = "Bearer",
-            //    BearerFormat = "JWT"
-            //});
+            options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme, new OpenApiSecurityScheme {
+                Description = @"<p>JWT Authorization header using the Bearer scheme.</br>
+                               Enter 'Bearer' [space] and then your token in the text input below.</br>
+                               Example: 'Bearer json-web-token'</p>",
+                Name = "Swagger Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = JwtBearerDefaults.AuthenticationScheme,
+                BearerFormat = "JWT"
+            });
 
-            //options.AddSecurityRequirement(new OpenApiSecurityRequirement {
-            //    {
-            //        new OpenApiSecurityScheme {
-            //            Reference = new OpenApiReference {
-            //                Type = ReferenceType.SecurityScheme,
-            //                Id = "Bearer"
-            //            },
-            //            Scheme = "Bearer",
-            //            Name = "Bearer",
-            //            In = ParameterLocation.Header
-            //        },
-            //        new List<string>()
-            //    }
-            //});
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement {{
+                new OpenApiSecurityScheme {
+                    Reference = new OpenApiReference {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = JwtBearerDefaults.AuthenticationScheme
+                    },
+                    Scheme = JwtBearerDefaults.AuthenticationScheme,
+                    Name = "Bearer Authentication",
+                    In = ParameterLocation.Header
+                },
+                new List<string>()
+            }});
         }
 
         options.MapType<DateOnly>(() => new() {
@@ -54,11 +53,7 @@ public class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
     {
         var info = new OpenApiInfo {
             Title = "WebAppHero.CleanArchitecture.Template",
-            Version = description.ApiVersion.ToString(),
-            //License = new OpenApiLicense {
-            //    Name = "MIT License",
-            //    Url = new Uri("https://opensource.org/licenses/MIT")
-            //}
+            Version = description.ApiVersion.ToString()
         };
 
         if (description.IsDeprecated) info.Description += " (deprecated)";

@@ -13,11 +13,15 @@ public class ProductApi : ApiEndpoint, IEndpointModule
     {
         #region ========== API-VERSION-1 ==========
 
-        var groupVersion1 = app.NewVersionedApi("products").MapGroup(ProductApiUrl).HasApiVersion(1);
+        var groupVersion1 =
+            app.NewVersionedApi("Products")
+               .MapGroup(ProductApiUrl)
+               .HasApiVersion(1)
+               .RequireAuthorization("RequireAuthenticatedUser");
 
         groupVersion1.MapPost("/for-testing", CreateProductsForTestingV1);
         groupVersion1.MapPost(string.Empty, CreateProductV1);
-        groupVersion1.MapGet(string.Empty, GetProductsV1);
+        groupVersion1.MapGet(string.Empty, GetProductsV1).AllowAnonymous();
         groupVersion1.MapGet("{productId}", GetProductByIdV1);
         groupVersion1.MapPut("{productId}", UpdateProductV1);
         groupVersion1.MapDelete("{productId}", DeleteProductV1);

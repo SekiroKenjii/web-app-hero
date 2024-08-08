@@ -5,6 +5,25 @@ namespace WebAppHero.API.Middlewares;
 
 public class ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionHandlerMiddleware> logger)
 {
+    public async Task InvokeAsync(HttpContext httpContext)
+    {
+        try
+        {
+            await next(httpContext);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "An error has occurred: {Message}", e.Message);
+
+            if (httpContext.Response.HasStarted)
+            {
+                return;
+            }
+
+            await HandleExceptionAsync(httpContext, e);
+        }
+    }
+
     private static async Task HandleExceptionAsync(HttpContext httpContext, Exception exception)
     {
         var statusCode = GetStatusCode(exception);
@@ -50,19 +69,5 @@ public class ExceptionHandlerMiddleware(RequestDelegate next, ILogger<ExceptionH
         }
 
         return default;
-    }
-
-    public async Task InvokeAsync(HttpContext httpContext)
-    {
-        try
-        {
-            await next(httpContext);
-        }
-        catch (Exception e)
-        {
-            logger.LogError(e, "An error has occurred: {Message}", e.Message);
-
-            await HandleExceptionAsync(httpContext, e);
-        }
     }
 }

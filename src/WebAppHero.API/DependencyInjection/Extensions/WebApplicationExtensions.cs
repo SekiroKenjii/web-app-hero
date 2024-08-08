@@ -34,7 +34,6 @@ public static class WebApplicationExtensions
                 options.SwaggerEndpoint($"/swagger/{version}/swagger.json", version);
             }
 
-            // options.EnableTryItOutByDefault();
             options.DisplayRequestDuration();
             options.DocExpansion(DocExpansion.None);
         });
