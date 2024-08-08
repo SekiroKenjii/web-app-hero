@@ -11,6 +11,11 @@ public class CustomJwtBearerEvents(ICacheService cacheService) : JwtBearerEvents
 {
     public override async Task TokenValidated(TokenValidatedContext context)
     {
+        if (context.Response.HasStarted)
+        {
+            return;
+        }
+
         if (context.SecurityToken is JwtSecurityToken accessToken)
         {
             var requestToken = accessToken.RawData.ToString();
@@ -19,9 +24,9 @@ public class CustomJwtBearerEvents(ICacheService cacheService) : JwtBearerEvents
 
             if (string.IsNullOrEmpty(emailKey))
             {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.Headers.Append("IS-TOKEN-INVALID", "true");
                 context.Response.ContentType = "application/json";
-
                 await context.Response.WriteAsync(JsonConvert.SerializeObject(new {
                     title = "Authentication Error",
                     status = context.Response.StatusCode,
@@ -36,9 +41,9 @@ public class CustomJwtBearerEvents(ICacheService cacheService) : JwtBearerEvents
 
             if (authenticated is null || authenticated.AccessToken != requestToken)
             {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
                 context.Response.Headers.Append("IS-TOKEN-REVOKED", "true");
                 context.Response.ContentType = "application/json";
-
                 await context.Response.WriteAsync(JsonConvert.SerializeObject(new {
                     title = "Authentication Error",
                     status = context.Response.StatusCode,
@@ -50,6 +55,7 @@ public class CustomJwtBearerEvents(ICacheService cacheService) : JwtBearerEvents
             return;
         }
 
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsync(JsonConvert.SerializeObject(new {
             title = "Authentication Error",

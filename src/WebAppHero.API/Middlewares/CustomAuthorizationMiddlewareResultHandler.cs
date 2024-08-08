@@ -14,7 +14,12 @@ public class CustomAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewa
         AuthorizationPolicy policy,
         PolicyAuthorizationResult authorizeResult)
     {
-        if (authorizeResult.Challenged && !authorizeResult.Succeeded)
+        if (context.Response.HasStarted)
+        {
+            return;
+        }
+
+        if (authorizeResult.Challenged)
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
             context.Response.ContentType = "application/json";
@@ -29,7 +34,7 @@ public class CustomAuthorizationMiddlewareResultHandler : IAuthorizationMiddlewa
             return;
         }
 
-        if (authorizeResult.Forbidden && !authorizeResult.Succeeded)
+        if (authorizeResult.Forbidden)
         {
             context.Response.StatusCode = StatusCodes.Status403Forbidden;
             context.Response.ContentType = "application/json";

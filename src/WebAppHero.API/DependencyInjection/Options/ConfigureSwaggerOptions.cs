@@ -20,7 +20,7 @@ public class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
                 Description = @"<p>JWT Authorization header using the Bearer scheme.</br>
                                Enter 'Bearer' [space] and then your token in the text input below.</br>
                                Example: 'Bearer json-web-token'</p>",
-                Name = "Swagger Authorization",
+                Name = "Authorization",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.ApiKey,
                 Scheme = JwtBearerDefaults.AuthenticationScheme,
@@ -34,7 +34,7 @@ public class ConfigureSwaggerOptions(IApiVersionDescriptionProvider provider)
                         Id = JwtBearerDefaults.AuthenticationScheme
                     },
                     Scheme = JwtBearerDefaults.AuthenticationScheme,
-                    Name = "Bearer Authentication",
+                    Name = "Authentication",
                     In = ParameterLocation.Header
                 },
                 new List<string>()
